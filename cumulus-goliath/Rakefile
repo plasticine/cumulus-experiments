@@ -1,0 +1,9 @@
+$: << 'lib'
+
+require 'rubygems'
+require 'bundler/setup'
+require 'cumulus'
+
+Dir[File.join(File.expand_path(File.dirname(__FILE__)), 'lib/tasks/*.rake')].each do |r|
+  load r
+end

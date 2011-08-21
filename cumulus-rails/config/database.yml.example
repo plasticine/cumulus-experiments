@@ -1,0 +1,16 @@
+common: &posgresql_defaults
+  adapter: postgres
+  encoding: unicode
+  pool: 5
+
+development:
+  <<: *posgresql_defaults
+  database: cumulus_development
+
+test:
+  <<: *posgresql_defaults
+  database: cumulus_test
+
+production:
+  <<: *posgresql_defaults
+  database: cumulus_development

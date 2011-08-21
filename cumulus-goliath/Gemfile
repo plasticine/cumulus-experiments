@@ -1,0 +1,10 @@
+source "http://rubygems.org"
+
+gem "goliath"
+gem "pg"
+gem "sequel"
+gem "ripple", :git => "git://github.com/seancribbs/ripple.git"
+
+group :development, :test do
+  gem "guard-rspec"
+end
