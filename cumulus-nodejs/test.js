@@ -1,5 +1,11 @@
-{"inputs": "test", "query": [
-  {
+{
+  "inputs": {
+    "module": "riak_search",
+    "function": "mapred_search",
+    "arg": ["facts", "type:page_view AND timestamp:[1314088600 TO 1314088660]"]
+  },
+
+  "query": [{
     "map": {
       "language": "javascript",
       "source": "
