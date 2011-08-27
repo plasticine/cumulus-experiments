@@ -1,10 +1,10 @@
 class Metric < Sequel::Model
   many_to_one :account
-  one_to_many :data, :dataset => proc { db[:"account_#{account_id}__metric_#{id}"] }, :read_only => true, :reciprocal => nil
+  one_to_many :facts, :dataset => proc { db[:"account_#{account_id}__metric_#{id}"] }, :read_only => true, :reciprocal => nil
 
   def validate
     super
-    validates_presence [:name]
+    validates_presence [:account, :type]
   end
 
   def aggregate(resolution, function)
@@ -15,7 +15,7 @@ class Metric < Sequel::Model
     timestamp = Sequel::SQL::NumericExpression.new(:+, *partition).cast(:timestamp).as(:timestamp)
     window_function = Sequel::SQL::WindowFunction.new(function, window).as(:value)
 
-    data_dataset. \
+    facts_dataset. \
     join(:dimension_dates, :date => :timestamp.cast(:date)). \
     join(:dimension_times, :time => :timestamp.cast(:time)). \
     distinct(*partition). \

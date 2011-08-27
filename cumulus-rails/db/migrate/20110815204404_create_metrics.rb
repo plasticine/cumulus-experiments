@@ -3,7 +3,8 @@ class CreateMetricsMigration < Sequel::Migration
     create_table :metrics do
       primary_key :id
       foreign_key :account_id, :accounts, :null => false, :on_delete => :cascade, :on_update => :cascade
-      String :name, :null => false, :index => true
+      String :type, :null => false, :index => true
+      column :grains, "text[]"
       DateTime :created_at, :null => false
       DateTime :updated_at, :null => false
     end

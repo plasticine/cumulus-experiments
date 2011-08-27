@@ -73,11 +73,12 @@ Sequel.migration do
     create_table(:metrics, :ignore_index_errors=>true) do
       primary_key :id
       Integer :account_id, :null=>false
-      String :name, :text=>true, :null=>false
+      String :type, :text=>true, :null=>false
+      String :grains
       DateTime :created_at, :null=>false
       DateTime :updated_at, :null=>false
       
-      index [:name]
+      index [:type]
     end
     
     create_table(:schema_migrations) do

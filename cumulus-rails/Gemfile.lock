@@ -8,6 +8,12 @@ GIT
       railties (> 3.0.0)
       sequel (~> 3.11)
 
+GIT
+  remote: git://github.com/nullobject/sequel_column_type_array.git
+  revision: 6890c5eb7e08cd1141691aab167fd4dcae71bbeb
+  specs:
+    sequel_column_type_array (0.0.2)
+
 GEM
   remote: http://rubygems.org/
   specs:
@@ -92,6 +98,8 @@ GEM
       thor (~> 0.14.6)
     rake (0.9.2)
     rdoc (3.9.2)
+    rest-client (1.6.7)
+      mime-types (>= 1.16)
     sass (3.1.7)
     sass-rails (3.1.0.rc.6)
       actionpack (~> 3.1.0.rc6)
@@ -120,6 +128,8 @@ DEPENDENCIES
   jquery-rails
   pg
   rails (= 3.1.0.rc6)
+  rest-client
   sass-rails (~> 3.1.0.rc)
   sequel-rails!
+  sequel_column_type_array!
   uglifier

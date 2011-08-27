@@ -1,7 +1,14 @@
-# This file should contain all the record creation needed to seed the database with its default values.
-# The data can then be loaded with the rake db:seed (or created alongside the db with db:setup).
-#
-# Examples:
-#
-#   cities = City.create([{ name: 'Chicago' }, { name: 'Copenhagen' }])
-#   Mayor.create(name: 'Emanuel', city: cities.first)
+require ::File.expand_path('../../config/environment',  __FILE__)
+
+account = Account.create(:name => "Acme")
+metric = Metric.create(:account => account, :type => "page_view", :grains => "response")
+
+Sequel::Model.db.execute <<-SQL
+  INSERT INTO account_#{account.id}.metric_#{metric.id} (timestamp, value)
+
+  SELECT
+    current_date + ((n - 1) * interval '1 second'),
+    RANDOM() * 100
+
+  FROM generate_series(1, 1000000) n;
+SQL
