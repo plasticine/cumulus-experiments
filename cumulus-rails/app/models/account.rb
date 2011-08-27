@@ -12,4 +12,14 @@ class Account < Sequel::Model
     self.api_key = Digest::SHA1.new.to_s
     super
   end
+
+  def after_create
+    super
+    db.execute "CREATE SCHEMA account_#{id}"
+  end
+
+  def before_destroy
+    db.execute "DROP SCHEMA account_#{id}"
+    super
+  end
 end

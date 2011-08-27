@@ -7,6 +7,23 @@ class Metric < Sequel::Model
     validates_presence [:account, :type]
   end
 
+  def after_create
+    super
+
+    db.create_table :"account_#{account_id}__metric_#{id}" do
+      timestamp :timestamp, :size => 0, :null => false
+      Float :value
+    end
+
+    db.execute "CREATE INDEX metric_#{id}_date_index ON account_#{account_id}.metric_#{id} ((timestamp::date))"
+    db.execute "CREATE INDEX metric_#{id}_time_index ON account_#{account_id}.metric_#{id} ((timestamp::time))"
+  end
+
+  def before_destroy
+    db.drop_table "account_#{account_id}.metric_#{id}"
+    super
+  end
+
   def aggregate(resolution, function)
     partition = calculate_partition(resolution)
     function  = Sequel::SQL::Function.new(function, :value)

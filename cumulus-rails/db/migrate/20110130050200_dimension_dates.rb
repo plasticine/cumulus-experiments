@@ -1,7 +1,7 @@
 class DimensionDatesMigration < Sequel::Migration
   def up
     create_table :dimension_dates do
-      Date :date, :primary_key => true
+      date :date, :primary_key => true
 
       Integer :year,    :null => false, :index => true
       Integer :quarter, :null => false, :index => true
