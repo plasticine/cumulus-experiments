@@ -1,11 +1,24 @@
 class AddNewMetricTriggerToMetricsMigration < Sequel::Migration
   def up
     execute <<-SQL
+    CREATE OR REPLACE FUNCTION array_to_columns(a anyarray)
+    RETURNS text AS $$
+      DECLARE
+        result text;
+      BEGIN
+        a := array_append(a, '');
+        result := '"' || array_to_string(a, '" float4, "');
+        RETURN trim(trailing '"' from result);
+      END;
+    $$ LANGUAGE plpgsql;
+    SQL
+
+    execute <<-SQL
       CREATE OR REPLACE FUNCTION public.create_metric_table()
       RETURNS trigger AS $$
         BEGIN
           EXECUTE 'CREATE TABLE account_' || NEW.account_id || '.metric_' || NEW.id || ' (
-            "timestamp" timestamp(0),
+            "timestamp" timestamp(0),' || array_to_columns(NEW.grains) || '
             "value" float4,
             CONSTRAINT "metric_' || NEW.id || 'pkey" PRIMARY KEY ("timestamp") NOT DEFERRABLE INITIALLY IMMEDIATE
           )';
