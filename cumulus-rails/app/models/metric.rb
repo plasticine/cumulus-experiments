@@ -2,15 +2,22 @@ class Metric < Sequel::Model
   many_to_one :account
   one_to_many :facts, :dataset => proc { db[:"account_#{account_id}__metric_#{id}"] }, :read_only => true, :reciprocal => nil
 
+  def fact_table_name; :"account_#{account_id}__metric_#{id}"; end
+
   def validate
     super
     validates_presence [:account, :type]
   end
 
+  def before_validation
+    self.grains = grains.map(&:to_s).uniq
+    super
+  end
+
   def after_create
     super
 
-    db.create_table :"account_#{account_id}__metric_#{id}" do
+    db.create_table fact_table_name do
       timestamp :timestamp, :size => 0, :null => false
       Float :value
     end
@@ -19,8 +26,31 @@ class Metric < Sequel::Model
     db.execute "CREATE INDEX metric_#{id}_time_index ON account_#{account_id}.metric_#{id} ((timestamp::time))"
   end
 
+  FACT_COLUMNS = [:timestamp, :value]
+
+  def after_save
+    super
+
+    add_columns = grains.map(&:to_sym) - (grains.map(&:to_sym) & facts_dataset.columns) - FACT_COLUMNS
+    drop_columns = facts_dataset.columns - grains.map(&:to_sym) - FACT_COLUMNS
+
+    puts "adding #{add_columns.inspect}"
+    puts "dropping #{drop_columns.inspect}"
+
+    db.alter_table fact_table_name do
+      add_columns.each do |column|
+        add_column column, String, :index => true
+        add_index column
+      end
+
+      drop_columns.each do |column|
+        drop_column column
+      end
+    end
+  end
+
   def before_destroy
-    db.drop_table "account_#{account_id}.metric_#{id}"
+    db.drop_table fact_table_name
     super
   end
 
