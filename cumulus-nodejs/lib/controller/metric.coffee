@@ -20,7 +20,7 @@ reduce = (values) ->
   [result]
 
 module.exports =
-  class Metric
+  class MetricController
     show: (request, response) =>
       bucket = request.params.metric
 

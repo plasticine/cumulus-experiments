@@ -2,9 +2,8 @@ connect  = require 'connect'
 express  = require 'express'
 resource = require 'express-resource'
 
-AccountController = require './lib/controller/account'
-FactController    = require './lib/controller/fact'
-MetricController  = require './lib/controller/metric'
+AtomController   = require './lib/controller/atom'
+MetricController = require './lib/controller/metric'
 
 app = express.createServer()
 
@@ -26,9 +25,8 @@ app.configure "development", ->
 app.configure "production", ->
   app.use express.errorHandler()
 
-app.resource 'accounts', new AccountController
-app.resource 'facts',    new FactController
-app.resource 'metrics',  new MetricController
+app.resource 'atoms',   new AtomController
+app.resource 'metrics', new MetricController
 
 app.listen 4000
 console.log "Express server listening on port %d in %s mode", app.address().port, app.settings.env
