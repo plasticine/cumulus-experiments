@@ -15,5 +15,6 @@ module.exports =
           response.send "Not Found", 404
 
     index: (request, response) ->
-      Atom.aggregate request.query.type, request.query.from, request.query.to, (facts) ->
+      {type, from, to, group} = request.query
+      Atom.aggregate type, from, to, group, (facts) ->
         response.send facts
