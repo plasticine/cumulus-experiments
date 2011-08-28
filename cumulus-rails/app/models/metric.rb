@@ -1,6 +1,6 @@
 class Metric < Sequel::Model
   many_to_one :account
-  one_to_many :facts, :dataset => proc { db[:"account_#{account_id}__metric_#{id}"] }, :read_only => true, :reciprocal => nil
+  one_to_many :facts, :dataset => proc { db[fact_table_name] }, :read_only => true, :reciprocal => nil
 
   def fact_table_name; :"account_#{account_id}__metric_#{id}"; end
 
@@ -16,41 +16,16 @@ class Metric < Sequel::Model
 
   def after_create
     super
-
-    db.create_table fact_table_name do
-      timestamp :timestamp, :size => 0, :null => false
-      Float :value
-    end
-
-    db.execute "CREATE INDEX metric_#{id}_date_index ON account_#{account_id}.metric_#{id} ((timestamp::date))"
-    db.execute "CREATE INDEX metric_#{id}_time_index ON account_#{account_id}.metric_#{id} ((timestamp::time))"
+    create_fact_table
   end
-
-  FACT_COLUMNS = [:timestamp, :value]
 
   def after_save
     super
-
-    add_columns = grains.map(&:to_sym) - (grains.map(&:to_sym) & facts_dataset.columns) - FACT_COLUMNS
-    drop_columns = facts_dataset.columns - grains.map(&:to_sym) - FACT_COLUMNS
-
-    puts "adding #{add_columns.inspect}"
-    puts "dropping #{drop_columns.inspect}"
-
-    db.alter_table fact_table_name do
-      add_columns.each do |column|
-        add_column column, String, :index => true
-        add_index column
-      end
-
-      drop_columns.each do |column|
-        drop_column column
-      end
-    end
+    synchronize_fact_table
   end
 
   def before_destroy
-    db.drop_table fact_table_name
+    drop_fact_table
     super
   end
 
@@ -85,6 +60,39 @@ private
     when :minute       then [:date, :nearest_minute]
     when :second       then [:date, :time]
     else raise "unknown resolution '#{resolution}'"
+    end
+  end
+
+  def create_fact_table
+    db.create_table fact_table_name do
+      timestamp :timestamp, :size => 0, :null => false
+      Float :value
+    end
+
+    db.execute "CREATE INDEX metric_#{id}_date_index ON #{self.class.dataset.quote_schema_table(fact_table_name)} ((timestamp::date))"
+    db.execute "CREATE INDEX metric_#{id}_time_index ON #{self.class.dataset.quote_schema_table(fact_table_name)} ((timestamp::time))"
+  end
+
+  def drop_fact_table
+    db.drop_table fact_table_name
+  end
+
+  FACT_COLUMNS = [:timestamp, :value].freeze
+
+  def synchronize_fact_table
+    symbolized_grains = grains.map(&:to_sym)
+    add_columns = symbolized_grains - (symbolized_grains & facts_dataset.columns) - FACT_COLUMNS
+    drop_columns = facts_dataset.columns - symbolized_grains - FACT_COLUMNS
+
+    db.alter_table fact_table_name do
+      add_columns.each do |column|
+        add_column column, String
+        add_index column
+      end
+
+      drop_columns.each do |column|
+        drop_column column
+      end
     end
   end
 end
