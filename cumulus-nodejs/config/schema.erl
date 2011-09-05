@@ -7,7 +7,6 @@
     {analyzer_factory, {erlang, text_analyzers, noop_analyzer_factory}}
   ],
   [
-    {field, [{name, "id"}, {required, true}]},
     {field, [{name, "type"}, {required, true}]},
     {field, [{name, "timestamp"},
              {analyzer_factory, {erlang, text_analyzers, integer_analyzer_factory}},

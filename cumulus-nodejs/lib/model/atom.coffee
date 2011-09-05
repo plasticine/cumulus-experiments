@@ -61,7 +61,8 @@ module.exports =
       group = group.split ","
 
       Client.instance().db
-        .addSearch("atoms", "type:#{type} AND timestamp:[#{from} TO #{to}]")
+#         .addSearch("atoms", "type:#{type} AND timestamp:[#{from} TO #{to}]")
+        .add(bucket: "atoms", key_filters: [["and", [["tokenize", "-", 1], ["eq", type]], [["tokenize", "-", 2], ["between", from, to]]]])
         .map(map_fun, group: group)
         .reduce(reduce_fun)
         .run (error, results) ->
@@ -70,8 +71,8 @@ module.exports =
 
     constructor: (properties) ->
       this.setProperties properties
-      @id = uuid()
       @timestamp = Math.round(Date.now() / 1000.0)
+      @id = @type + "-" + @timestamp + "-" + uuid()
 
     save: ->
       Client.instance().db.save "atoms", @id, this
