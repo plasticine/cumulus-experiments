@@ -1,9 +1,7 @@
 require File.expand_path('../boot', __FILE__)
 
-# Pick the frameworks you want:
 require 'action_controller/railtie'
 require 'action_mailer/railtie'
-require 'active_resource/railtie'
 require 'sequel-rails/railtie'
 require 'sprockets/railtie'
 
@@ -46,5 +44,8 @@ module Cumulus
 
     # Enable the asset pipeline
     config.assets.enabled = true
+
+    # Version of your assets, change this if you want to expire all your assets
+    config.assets.version = '1.0'
   end
 end

@@ -4,4 +4,4 @@
 # If you change this key, all old signed cookies will become invalid!
 # Make sure the secret is at least 30 characters and all random,
 # no regular words or you'll be exposed to dictionary attacks.
-Cumulus::Application.config.secret_token = '7f7af41ff07acebbab332d1b08e5c3c4b664faf8ceb41c900a68c553f60186c3db72d120a9f56ebf62b4987174b6d4988802b1802ee0a5c22b2e4d7e7ef3c949'
+Cumulus::Application.config.secret_token = 'f3c5b8b5be741f63b82c67d4492a634452d4ec9802aadb6f1b1fc44c76926da24e933c20a842944e9f71c9c08fac8f8d3cb499111121006bf53cfde940a382b9'
