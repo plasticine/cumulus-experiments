@@ -1,6 +1,8 @@
 class Account < Sequel::Model
   one_to_many :metrics
 
+protected
+
   def validate
     super
     validates_presence [:name, :api_key]

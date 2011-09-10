@@ -2,7 +2,7 @@ require 'unit_helper'
 
 describe Metric do
   let(:account) { FactoryGirl.create :account }
-  let(:metric)  { FactoryGirl.build :metric, id: 123, account: account }
+  let(:metric)  { FactoryGirl.create :metric, account: account }
 
   describe "#fact_table_name" do
     subject { metric.fact_table_name }
@@ -10,8 +10,10 @@ describe Metric do
   end
 
   describe "#save" do
+    subject { metric.save }
+
     context "when created" do
-      subject { metric.save }
+      let(:metric) { FactoryGirl.build :metric, id: 123, account: account }
 
       it "should create the fact table" do
         expect { subject }.to change { table_exists?(metric.fact_table_name) }.from(false).to(true)
@@ -23,12 +25,8 @@ describe Metric do
       end
     end
 
-    context "when updated with grains" do
-      let(:grains) { [:foo, :baz] }
-
-      before { metric.save! }
-
-      subject { metric.update(grains: grains) }
+    context "when updated" do
+      before { metric.grains = [:foo, :baz] }
 
       it "should synchronize the grain columns" do
         subject
@@ -38,8 +36,6 @@ describe Metric do
   end
 
   describe "#destroy" do
-    before { metric.save! }
-
     subject { metric.destroy }
 
     it "should drop the fact table" do
@@ -48,19 +44,17 @@ describe Metric do
   end
 
   describe "#aggregate" do
-    before do
-      metric.save!
+    let(:resolution) { :hour }
+    let(:function)   { :avg }
+    let(:results)    { metric.aggregate(resolution, function).all }
 
+    before do
       Timecop.freeze("2011-01-01 02:00".to_time) do
         1.upto(240) do |n|
           metric.facts_dataset.insert(timestamp: n.minutes.ago, value: n)
         end
       end
     end
-
-    let(:resolution) { :hour }
-    let(:function)   { :avg }
-    let(:results)    { metric.aggregate(resolution, function).all }
 
     subject { results }
 
@@ -259,12 +253,18 @@ describe Metric do
 
     context "with an invalid resolution" do
       let(:resolution) { :foo }
-      it { expect { subject }.to raise_error("invalid resolution 'foo'") }
+
+      it "should raise an error" do
+        expect { subject }.to raise_error("invalid resolution 'foo'")
+      end
     end
 
     context "with an invalid function" do
       let(:function) { :foo }
-      it { expect { subject }.to raise_error("invalid function 'foo'") }
+
+      it "should raise an error" do
+        expect { subject }.to raise_error("invalid function 'foo'")
+      end
     end
   end
 end
