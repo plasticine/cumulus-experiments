@@ -5,11 +5,30 @@ class Metric < Sequel::Model
   many_to_one :account
   one_to_many :facts, read_only: true, reciprocal: nil, dataset: proc { db[fact_table_name] }
 
-  def fact_table_name; :"account_#{account_id}__metric_#{id}"; end
+  def fact_table_name
+    :"account_#{account_id}__metric_#{id}"
+  end
 
   def grains
     (values[:grains] || []).map(&:to_sym)
   end
+
+  def aggregate(resolution, function)
+    partition = calculate_partition(resolution)
+    function  = calculate_function(function)
+    window    = Sequel::SQL::Window.new(partition: partition)
+
+    timestamp = Sequel::SQL::NumericExpression.new(:+, *partition).cast(:timestamp).as(:timestamp)
+    window_function = Sequel::SQL::WindowFunction.new(function, window).as(:value)
+
+    facts_dataset
+      .join(:dimension_dates, date: :timestamp.cast(:date))
+      .join(:dimension_times, time: :timestamp.cast(:time))
+      .distinct(*partition)
+      .select(timestamp, window_function)
+  end
+
+protected
 
   def validate
     super
@@ -36,23 +55,6 @@ class Metric < Sequel::Model
     super
   end
 
-  def aggregate(resolution, function)
-    partition = calculate_partition(resolution)
-    function  = Sequel::SQL::Function.new(function, :value)
-    window    = Sequel::SQL::Window.new(partition: partition)
-
-    timestamp = Sequel::SQL::NumericExpression.new(:+, *partition).cast(:timestamp).as(:timestamp)
-    window_function = Sequel::SQL::WindowFunction.new(function, window).as(:value)
-
-    facts_dataset
-      .join(:dimension_dates, date: :timestamp.cast(:date))
-      .join(:dimension_times, time: :timestamp.cast(:time))
-      .distinct(*partition)
-      .select(timestamp, window_function)
-  end
-
-private
-
   def calculate_partition(resolution)
     case resolution.to_sym
     when :year         then :nearest_year
@@ -66,8 +68,13 @@ private
     when :twelfth_hour then [:date, :nearest_twelfth_hour]
     when :minute       then [:date, :nearest_minute]
     when :second       then [:date, :time]
-    else raise "unknown resolution '#{resolution}'"
+    else raise "invalid resolution '#{resolution}'"
     end
+  end
+
+  def calculate_function(function)
+    raise "invalid function '#{function}'" unless [:sum, :avg, :min, :max, :count].include?(function.to_sym)
+    Sequel::SQL::Function.new(function.to_sym, :value)
   end
 
   def create_fact_table
