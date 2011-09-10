@@ -1,18 +1,18 @@
 class DimensionDatesMigration < Sequel::Migration
   def up
     create_table :dimension_dates do
-      date :date, :primary_key => true
+      date :date, primary_key: true
 
-      Integer :year,    :null => false, :index => true
-      Integer :quarter, :null => false, :index => true
-      Integer :month,   :null => false, :index => true
-      Integer :week,    :null => false, :index => true
-      Integer :day,     :null => false, :index => true
+      Integer :year,    null: false, index: true
+      Integer :quarter, null: false, index: true
+      Integer :month,   null: false, index: true
+      Integer :week,    null: false, index: true
+      Integer :day,     null: false, index: true
 
-      date :nearest_year,    :null => false, :index => true
-      date :nearest_quarter, :null => false, :index => true
-      date :nearest_month,   :null => false, :index => true
-      date :nearest_week,    :null => false, :index => true
+      date :nearest_year,    null: false, index: true
+      date :nearest_quarter, null: false, index: true
+      date :nearest_month,   null: false, index: true
+      date :nearest_week,    null: false, index: true
     end
 
     execute %(

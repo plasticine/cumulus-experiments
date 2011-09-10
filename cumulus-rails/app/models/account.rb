@@ -1,5 +1,3 @@
-require 'digest/sha1'
-
 class Account < Sequel::Model
   one_to_many :metrics
 
@@ -9,7 +7,7 @@ class Account < Sequel::Model
   end
 
   def before_validation
-    self.api_key = Digest::SHA1.new.to_s
+    self.api_key ||= SecureRandom.hex
     super
   end
 

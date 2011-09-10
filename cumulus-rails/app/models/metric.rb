@@ -1,8 +1,15 @@
+# A metric represents a measurement at a paticular time.
 class Metric < Sequel::Model
+  FACT_COLUMNS = [:timestamp, :value].freeze
+
   many_to_one :account
-  one_to_many :facts, :dataset => proc { db[fact_table_name] }, :read_only => true, :reciprocal => nil
+  one_to_many :facts, read_only: true, reciprocal: nil, dataset: proc { db[fact_table_name] }
 
   def fact_table_name; :"account_#{account_id}__metric_#{id}"; end
+
+  def grains
+    (values[:grains] || []).map(&:to_sym)
+  end
 
   def validate
     super
@@ -10,7 +17,7 @@ class Metric < Sequel::Model
   end
 
   def before_validation
-    self.grains = grains.map(&:to_s).uniq
+    self.grains = grains.uniq
     super
   end
 
@@ -32,16 +39,16 @@ class Metric < Sequel::Model
   def aggregate(resolution, function)
     partition = calculate_partition(resolution)
     function  = Sequel::SQL::Function.new(function, :value)
-    window    = Sequel::SQL::Window.new(:partition => partition)
+    window    = Sequel::SQL::Window.new(partition: partition)
 
     timestamp = Sequel::SQL::NumericExpression.new(:+, *partition).cast(:timestamp).as(:timestamp)
     window_function = Sequel::SQL::WindowFunction.new(function, window).as(:value)
 
-    facts_dataset. \
-    join(:dimension_dates, :date => :timestamp.cast(:date)). \
-    join(:dimension_times, :time => :timestamp.cast(:time)). \
-    distinct(*partition). \
-    select(timestamp, window_function)
+    facts_dataset
+      .join(:dimension_dates, date: :timestamp.cast(:date))
+      .join(:dimension_times, time: :timestamp.cast(:time))
+      .distinct(*partition)
+      .select(timestamp, window_function)
   end
 
 private
@@ -65,7 +72,7 @@ private
 
   def create_fact_table
     db.create_table fact_table_name do
-      timestamp :timestamp, :size => 0, :null => false
+      timestamp :timestamp, size: 0, null: false
       Float :value
     end
 
@@ -77,12 +84,9 @@ private
     db.drop_table fact_table_name
   end
 
-  FACT_COLUMNS = [:timestamp, :value].freeze
-
   def synchronize_fact_table
-    symbolized_grains = grains.map(&:to_sym)
-    add_columns = symbolized_grains - (symbolized_grains & facts_dataset.columns) - FACT_COLUMNS
-    drop_columns = facts_dataset.columns - symbolized_grains - FACT_COLUMNS
+    add_columns  = grains - (grains & facts_dataset.columns) - FACT_COLUMNS
+    drop_columns = facts_dataset.columns - grains - FACT_COLUMNS
 
     db.alter_table fact_table_name do
       add_columns.each do |column|

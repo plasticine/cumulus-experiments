@@ -1,9 +1,12 @@
 source "http://rubygems.org"
 
-gem "pg"
 gem "rails", "3.1.0"
+gem "jquery-rails"
+
+gem "pg"
 gem "sequel-rails", git: "git://github.com/arthurdandrea/sequel-rails.git"
 gem "sequel_column_type_array", git: "git://github.com/nullobject/sequel_column_type_array.git"
+
 gem "rest-client", require: false
 
 # Gems used only for assets and not required
@@ -14,4 +17,8 @@ group :assets do
   gem "uglifier"
 end
 
-gem "jquery-rails"
+group :test do
+  gem "rspec-rails"
+  gem "factory_girl_rails"
+  gem "faker"
+end

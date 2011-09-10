@@ -1,7 +1,7 @@
-require ::File.expand_path('../../config/environment',  __FILE__)
+require File.expand_path('../../config/environment',  __FILE__)
 
-account = Account.create(:name => "Acme")
-metric = Metric.create(:account => account, :type => "page_view", :grains => [:resource])
+account = Account.create(name: "Acme")
+metric = Metric.create(account: account, type: "page_view", grains: [:resource])
 
 Sequel::Model.db.execute <<-SQL
   INSERT INTO account_#{account.id}.metric_#{metric.id} (timestamp, value, resource)
