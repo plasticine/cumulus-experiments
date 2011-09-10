@@ -1,4 +1,5 @@
 require 'spec_helper'
+require 'webmock/rspec'
 
 RSpec.configure do |config|
   config.mock_with :rspec
