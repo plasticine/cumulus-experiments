@@ -1,10 +1,67 @@
 assert = require "assert"
-buffer = require "buffer"
 sinon  = require "sinon"
 vows   = require "vows"
 
 Atom   = require "../../lib/models/atom"
 Client = require "../../lib/client"
+
+values = ->
+  values: [
+    {data: """{"type":"page_view","response_time":123,"resource":"index","id":"58756817-7b05-4c1b-9351-9047fad6d969","timestamp":1315712941}"""}
+    {data: """{"type":"page_view","response_time":234,"resource":"index","id":"58756817-7b05-4c1b-9351-9047fad6d969","timestamp":1315712999}"""}
+    {data: """{"type":"page_view","response_time":345,"resource":"index","id":"66e15fa2-96ed-4c44-aede-24462ce4812b","timestamp":1315713059}"""}
+  ]
+
+mappings = ->
+  [{
+    "1315712940_index":
+      timestamp: 1315712940
+      resource:  'index'
+      sum:       123
+      avg:       123
+      min:       123
+      max:       123
+      count:     1
+  }, {
+    "1315712940_index":
+      timestamp: 1315712940
+      resource:  'index'
+      sum:       234
+      avg:       234
+      min:       234
+      max:       234
+      count:     1
+  }, {
+    "1315713000_index":
+      timestamp: 1315713000
+      resource:  'index'
+      sum:       345
+      avg:       345
+      min:       345
+      max:       345
+      count:     1
+  }]
+
+reductions = ->
+  [{
+    "1315712940_index":
+      timestamp: 1315712940
+      resource:  'index'
+      sum:       357
+      avg:       178.5
+      min:       123
+      max:       234
+      count:     2
+
+    "1315713000_index":
+      timestamp: 1315713000
+      resource:  'index'
+      sum:       345
+      avg:       345
+      min:       345
+      max:       345
+      count:     1
+  }]
 
 vows
   .describe("Atom")
@@ -51,44 +108,24 @@ vows
 
       "with values":
         topic: ->
-          value =
-            values: [
-              {data: """{"type":"page_view","response_time":123,"resource":"index","id":"58756817-7b05-4c1b-9351-9047fad6d969","timestamp":1315712941}"""}
-              {data: """{"type":"page_view","response_time":234,"resource":"index","id":"66e15fa2-96ed-4c44-aede-24462ce4812b","timestamp":1315713059}"""}
-            ]
+          args = {property: "response_time", groups: "resource"}
 
-          Atom.mapFunction value, null, {property: "response_time", groups: "resource"}
+          Atom.mapFunction values(), null, args
 
-        "first result":
-          topic: (results) -> results[0]
+        "should return the expected results": (results) ->
+          assert.deepEqual results, mappings()
 
-          "should match": (result) ->
-            expected =
-              "1315712940_index":
-                timestamp: 1315712940
-                resource:  'index'
-                sum:       123
-                avg:       123
-                min:       123
-                max:       123
-                count:     1
+    ".reduceFunction":
+      "with no values":
+        topic: -> Atom.reduceFunction []
 
-            assert.deepEqual result, expected
+        "should return a single empty hash": (result) ->
+          assert.deepEqual result, [{}]
 
-        "last result":
-          topic: (results) -> results[results.length - 1]
+      "with values":
+        topic: -> Atom.reduceFunction mappings()
 
-          "should match": (result) ->
-            expected =
-              "1315713000_index":
-                timestamp: 1315713000
-                resource:  'index'
-                sum:       234
-                avg:       234
-                min:       234
-                max:       234
-                count:     1
-
-            assert.deepEqual result, expected
+        "should return the expected results": (results) ->
+          assert.deepEqual results, reductions()
 
   .export(module)

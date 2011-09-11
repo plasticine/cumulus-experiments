@@ -19,13 +19,12 @@ module.exports =
         # Make a grain key by joining the groups.
         grain = groups.map((group) -> atom[group]).join("_")
 
-        result[grain] = {
-          sum:   atom[args.property],
-          avg:   atom[args.property],
-          min:   atom[args.property],
-          max:   atom[args.property],
+        result[grain] =
+          sum:   atom[args.property]
+          avg:   atom[args.property]
+          min:   atom[args.property]
+          max:   atom[args.property]
           count: 1
-        }
 
         groups.forEach (group) ->
           result[grain][group] = atom[group]
@@ -34,7 +33,7 @@ module.exports =
 
     @reduceFunction: (values) ->
       return [
-        values.reduce (acc, value) ->
+        values.reduce ((acc, value) ->
           for grain, atom of value
             if grain of acc
               acc[grain].sum   = acc[grain].sum + atom.sum
@@ -45,6 +44,7 @@ module.exports =
             else
               acc[grain] = atom
           acc
+        ), {}
       ]
 
     @generateUUID: -> uuid()
