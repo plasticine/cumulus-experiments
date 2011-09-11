@@ -10,10 +10,11 @@ describe FactLoader do
 
     let(:query) do
       {
-        type:  "page_view",
-        from:  "1315524514",
-        to:    "1315525514",
-        group: "resource"
+        type:     "page_view",
+        from:     "1315524514",
+        to:       "1315525514",
+        property: "response_time",
+        group:    "resource"
       }
     end
 
