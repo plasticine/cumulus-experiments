@@ -4,6 +4,9 @@ Client = require '../client'
 
 module.exports =
   class Atom
+    # TODO: infer this name from the class using the lingo lib.
+    @bucket: "atoms"
+
     @mapFunction: (value, keyData, args) ->
       return value.values.map (value) ->
         result = {}
@@ -52,7 +55,7 @@ module.exports =
     @currentTimestamp: -> Math.round(Date.now() / 1000.0)
 
     @find: (id, callback) ->
-      Client.instance().db.get "atoms", id, (error, result) ->
+      Client.instance().db.get Atom.bucket, id, (error, result) ->
         if !error
           callback result
         else if error && error.statusCode == 404
@@ -65,12 +68,12 @@ module.exports =
       atom.save()
       atom
 
-    @aggregate: (type, from, to, group, callback) ->
+    @aggregate: (type, from, to, property, group, callback) ->
       groups = group.split ","
 
       Client.instance().db
-        .addSearch("atoms", "type:#{type} AND timestamp:[#{from} TO #{to}]")
-        .map(Atom.mapFunction, property: "response_time", groups: groups)
+        .addSearch(Atom.bucket, "type:#{type} AND timestamp:[#{from} TO #{to}]")
+        .map(Atom.mapFunction, property: property, groups: groups)
         .reduce(Atom.reduceFunction)
         .run (error, results) ->
           results = (value for key, value of results[0])
