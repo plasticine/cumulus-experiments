@@ -1,5 +1,4 @@
-Atom   = require '../model/atom'
-Client = require '../client'
+Atom = require '../models/atom'
 
 module.exports =
   class AtomController
