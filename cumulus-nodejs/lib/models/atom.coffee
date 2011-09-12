@@ -16,6 +16,8 @@ module.exports =
         # Round the timestamp to the nearest minute.
         atom.timestamp = Math.floor(atom.timestamp / 60) * 60
 
+        properties = [].concat args.property
+
         # Timestamp is always a group.
         groups = ["timestamp"].concat args.groups
 
@@ -23,14 +25,18 @@ module.exports =
         grain = groups.map((group) -> atom[group]).join("_")
 
         result[grain] =
-          sum:   atom[args.property]
-          avg:   atom[args.property]
-          min:   atom[args.property]
-          max:   atom[args.property]
           count: 1
+          properties: {}
 
         groups.forEach (group) ->
           result[grain][group] = atom[group]
+
+        properties.forEach (property) ->
+          result[grain].properties[property] =
+            sum: atom[property]
+            avg: atom[property]
+            min: atom[property]
+            max: atom[property]
 
         result
 
@@ -39,10 +45,12 @@ module.exports =
         values.reduce ((acc, value) ->
           for grain, atom of value
             if grain of acc
-              acc[grain].sum   = acc[grain].sum + atom.sum
-              acc[grain].avg   = ((acc[grain].avg * acc[grain].count) + (atom.avg * atom.count)) / (acc[grain].count + atom.count)
-              acc[grain].min   = Math.min(acc[grain].min, atom.min)
-              acc[grain].max   = Math.max(acc[grain].max, atom.max)
+              for property, hash of atom.properties
+                acc[grain].properties[property].sum = acc[grain].properties[property].sum + hash.sum
+                acc[grain].properties[property].avg = ((acc[grain].properties[property].avg * acc[grain].count) + (hash.avg * atom.count)) / (acc[grain].count + atom.count)
+                acc[grain].properties[property].min = Math.min(acc[grain].properties[property].min, hash.min)
+                acc[grain].properties[property].max = Math.max(acc[grain].properties[property].max, hash.max)
+
               acc[grain].count = acc[grain].count + atom.count
             else
               acc[grain] = atom

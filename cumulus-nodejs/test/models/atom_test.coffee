@@ -17,29 +17,35 @@ mappings = ->
     "1315712940_index":
       timestamp: 1315712940
       resource:  'index'
-      sum:       123
-      avg:       123
-      min:       123
-      max:       123
       count:     1
+      properties:
+        response_time:
+          sum: 123
+          avg: 123
+          min: 123
+          max: 123
   }, {
     "1315712940_index":
       timestamp: 1315712940
       resource:  'index'
-      sum:       234
-      avg:       234
-      min:       234
-      max:       234
       count:     1
+      properties:
+        response_time:
+          sum: 234
+          avg: 234
+          min: 234
+          max: 234
   }, {
     "1315713000_index":
       timestamp: 1315713000
       resource:  'index'
-      sum:       345
-      avg:       345
-      min:       345
-      max:       345
       count:     1
+      properties:
+        response_time:
+          sum: 345
+          avg: 345
+          min: 345
+          max: 345
   }]
 
 reductions = ->
@@ -47,20 +53,24 @@ reductions = ->
     "1315712940_index":
       timestamp: 1315712940
       resource:  'index'
-      sum:       357
-      avg:       178.5
-      min:       123
-      max:       234
       count:     2
+      properties:
+        response_time:
+          sum: 357
+          avg: 178.5
+          min: 123
+          max: 234
 
     "1315713000_index":
       timestamp: 1315713000
       resource:  'index'
-      sum:       345
-      avg:       345
-      min:       345
-      max:       345
       count:     1
+      properties:
+        response_time:
+          sum: 345
+          avg: 345
+          min: 345
+          max: 345
   }]
 
 vows
