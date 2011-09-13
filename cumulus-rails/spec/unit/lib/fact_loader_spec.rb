@@ -19,7 +19,7 @@ describe FactLoader do
     end
 
     let(:body) do
-      %q([{"timestamp":1315524600,"resource":"index","sum_response_time":38871,"avg_response_time":107.37845303867404,"min_response_time":1,"max_response_time":258,"count":362},{"timestamp":1315524660,"resource":"index","sum_response_time":111580,"avg_response_time":398.5,"min_response_time":259,"max_response_time":538,"count":280}])
+      %q{[{"timestamp":1315524600,"resource":"index","sum_response_time":38871,"avg_response_time":107.37845303867404,"min_response_time":1,"max_response_time":258,"count":362},{"timestamp":1315524660,"resource":"index","sum_response_time":111580,"avg_response_time":398.5,"min_response_time":259,"max_response_time":538,"count":280}]}
     end
 
     let(:results) { FactLoader.process! }

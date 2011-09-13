@@ -74,7 +74,8 @@ Sequel.migration do
       primary_key :id
       Integer :account_id, :null=>false
       String :type, :text=>true, :null=>false
-      String :grains
+      String :grains, :null=>false
+      String :properties, :null=>false
       DateTime :created_at, :null=>false
       DateTime :updated_at, :null=>false
       

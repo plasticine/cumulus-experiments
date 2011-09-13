@@ -1,6 +1,7 @@
 # A metric represents a measurement at a paticular time.
 class Metric < Sequel::Model
-  FACT_COLUMNS = [:timestamp, :value].freeze
+  FACT_COLUMNS = [:timestamp, :count].freeze
+  AGGREGATIONS = [:sum, :avg, :min, :max].freeze
 
   many_to_one :account
   one_to_many :facts, read_only: true, reciprocal: nil, dataset: proc { db[fact_table_name] }
@@ -13,19 +14,42 @@ class Metric < Sequel::Model
     (values[:grains] || []).map(&:to_sym)
   end
 
-  def aggregate(resolution, function)
-    partition = calculate_partition(resolution)
-    function  = calculate_function(function)
-    window    = Sequel::SQL::Window.new(partition: partition)
+  def properties
+    (values[:properties] || []).map(&:to_sym)
+  end
 
+  def aggregate(resolution)
+    partition = calculate_partition(resolution)
+    window    = Sequel::SQL::Window.new(partition: partition)
     timestamp = Sequel::SQL::NumericExpression.new(:+, *partition).cast(:timestamp).as(:timestamp)
-    window_function = Sequel::SQL::WindowFunction.new(function, window).as(:value)
+
+    functions = properties.map do |property|
+      AGGREGATIONS.map do |aggregation|
+        function = Sequel::SQL::Function.new(aggregation, :"#{aggregation}_#{property}")
+        Sequel::SQL::WindowFunction.new(function, window).as(:"#{aggregation}_#{property}")
+      end
+    end.flatten
+
+    function = Sequel::SQL::Function.new(:sum, :count)
+    count_window_function = Sequel::SQL::WindowFunction.new(function, window).as(:count)
 
     facts_dataset
       .join(:dimension_dates, date: :timestamp.cast(:date))
       .join(:dimension_times, time: :timestamp.cast(:time))
       .distinct(*partition)
-      .select(timestamp, window_function)
+      .select(timestamp, count_window_function, *functions)
+  end
+
+  def property_columns
+    properties.map do |property|
+      AGGREGATIONS.map do |aggregation|
+        :"#{aggregation}_#{property}"
+      end
+    end.flatten
+  end
+
+  def grain_columns
+    grains
   end
 
 protected
@@ -36,7 +60,8 @@ protected
   end
 
   def before_validation
-    self.grains = grains.uniq
+    self.grains     = grains.uniq
+    self.properties = properties.uniq
     super
   end
 
@@ -47,7 +72,9 @@ protected
 
   def after_save
     super
-    synchronize_fact_table
+    add_grain_columns
+    add_property_columns
+    drop_unused_columns
   end
 
   def before_destroy
@@ -80,7 +107,7 @@ protected
   def create_fact_table
     db.create_table fact_table_name do
       timestamp :timestamp, size: 0, null: false
-      Float :value
+      Integer :count, null: false
     end
 
     db.execute "CREATE INDEX metric_#{id}_date_index ON #{self.class.dataset.quote_schema_table(fact_table_name)} ((timestamp::date))"
@@ -91,16 +118,31 @@ protected
     db.drop_table fact_table_name
   end
 
-  def synchronize_fact_table
-    add_columns  = grains - (grains & facts_dataset.columns) - FACT_COLUMNS
-    drop_columns = facts_dataset.columns - grains - FACT_COLUMNS
+  def add_grain_columns
+    add_grain_columns  = grain_columns - (grain_columns & facts_dataset.columns) - FACT_COLUMNS
 
     db.alter_table fact_table_name do
-      add_columns.each do |column|
+      add_grain_columns.each do |column|
         add_column column, String
         add_index column
       end
+    end
+  end
 
+  def add_property_columns
+    add_property_columns  = property_columns - (property_columns & facts_dataset.columns) - FACT_COLUMNS
+
+    db.alter_table fact_table_name do
+      add_property_columns.each do |column|
+        add_column column, Float
+      end
+    end
+  end
+
+  def drop_unused_columns
+    drop_columns = facts_dataset.columns - grain_columns - property_columns - FACT_COLUMNS
+
+    db.alter_table fact_table_name do
       drop_columns.each do |column|
         drop_column column
       end

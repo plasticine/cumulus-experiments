@@ -21,7 +21,7 @@ describe Metric do
 
       it "should synchronize the grain columns" do
         subject
-        metric.facts_dataset.columns.should =~ Metric::FACT_COLUMNS + metric.grains
+        metric.facts_dataset.columns.should =~ Metric::FACT_COLUMNS + metric.grain_columns + metric.property_columns
       end
     end
 
@@ -30,7 +30,7 @@ describe Metric do
 
       it "should synchronize the grain columns" do
         subject
-        metric.facts_dataset.columns.should =~ Metric::FACT_COLUMNS + metric.grains
+        metric.facts_dataset.columns.should =~ Metric::FACT_COLUMNS + metric.grain_columns + metric.property_columns
       end
     end
   end
@@ -45,13 +45,23 @@ describe Metric do
 
   describe "#aggregate" do
     let(:resolution) { :hour }
-    let(:function)   { :avg }
-    let(:results)    { metric.aggregate(resolution, function).all }
+    let(:results)    { metric.aggregate(resolution).all }
 
     before do
       Timecop.freeze("2011-01-01 02:00".to_time) do
         1.upto(240) do |n|
-          metric.facts_dataset.insert(timestamp: n.minutes.ago, value: n)
+          metric.facts_dataset.insert(
+            timestamp: n.minutes.ago,
+            sum_lorem: n * 1,
+            avg_lorem: n * 2,
+            min_lorem: n * 3,
+            max_lorem: n * 4,
+            sum_ipsum: n * 5,
+            avg_ipsum: n * 6,
+            min_ipsum: n * 7,
+            max_ipsum: n * 8,
+            count:     n * 10
+          )
         end
       end
     end
@@ -67,14 +77,22 @@ describe Metric do
         subject { results.first.to_ostruct }
 
         its(:timestamp) { should == "2010-01-01 00:00".to_time }
-        its(:value)     { should == 180.5 }
+        its(:count)     { should == 216600 }
+        its(:sum_lorem) { should == 21660 }
+        its(:avg_lorem) { should == 361 }
+        its(:min_lorem) { should == 363 }
+        its(:max_lorem) { should == 960 }
       end
 
       context "last result" do
         subject { results.last.to_ostruct }
 
         its(:timestamp) { should == "2011-01-01 00:00".to_time }
-        its(:value)     { should == 60.5 }
+        its(:count)     { should == 72600 }
+        its(:sum_lorem) { should == 7260 }
+        its(:avg_lorem) { should == 121 }
+        its(:min_lorem) { should == 3 }
+        its(:max_lorem) { should == 480 }
       end
     end
 
@@ -87,27 +105,22 @@ describe Metric do
         subject { results.first.to_ostruct }
 
         its(:timestamp) { should == "2010-12-01 00:00".to_time }
-        its(:value)     { should == 180.5 }
+        its(:count)     { should == 216600 }
+        its(:sum_lorem) { should == 21660 }
+        its(:avg_lorem) { should == 361 }
+        its(:min_lorem) { should == 363 }
+        its(:max_lorem) { should == 960 }
       end
 
       context "last result" do
         subject { results.last.to_ostruct }
 
         its(:timestamp) { should == "2011-01-01 00:00".to_time }
-        its(:value)     { should == 60.5 }
-      end
-    end
-
-    context "by week" do
-      let(:resolution) { :week }
-
-      its(:length) { should == 1 }
-
-      context "first result" do
-        subject { results.first.to_ostruct }
-
-        its(:timestamp) { should == "2010-12-27 00:00".to_time }
-        its(:value)     { should == 120.5 }
+        its(:count)     { should == 72600 }
+        its(:sum_lorem) { should == 7260 }
+        its(:avg_lorem) { should == 121 }
+        its(:min_lorem) { should == 3 }
+        its(:max_lorem) { should == 480 }
       end
     end
 
@@ -120,14 +133,22 @@ describe Metric do
         subject { results.first.to_ostruct }
 
         its(:timestamp) { should == "2010-12-31 00:00".to_time }
-        its(:value)     { should == 180.5 }
+        its(:count)     { should == 216600 }
+        its(:sum_lorem) { should == 21660 }
+        its(:avg_lorem) { should == 361 }
+        its(:min_lorem) { should == 363 }
+        its(:max_lorem) { should == 960 }
       end
 
       context "last result" do
         subject { results.last.to_ostruct }
 
         its(:timestamp) { should == "2011-01-01 00:00".to_time }
-        its(:value)     { should == 60.5 }
+        its(:count)     { should == 72600 }
+        its(:sum_lorem) { should == 7260 }
+        its(:avg_lorem) { should == 121 }
+        its(:min_lorem) { should == 3 }
+        its(:max_lorem) { should == 480 }
       end
     end
 
@@ -140,94 +161,22 @@ describe Metric do
         subject { results.first.to_ostruct }
 
         its(:timestamp) { should == "2010-12-31 22:00".to_time }
-        its(:value)     { should == 210.5 }
+        its(:count)     { should == 126300 }
+        its(:sum_lorem) { should == 12630 }
+        its(:avg_lorem) { should == 421 }
+        its(:min_lorem) { should == 543 }
+        its(:max_lorem) { should == 960 }
       end
 
       context "last result" do
         subject { results.last.to_ostruct }
 
         its(:timestamp) { should == "2011-01-01 01:00".to_time }
-        its(:value)     { should == 30.5 }
-      end
-    end
-
-    context "by half-hour" do
-      let(:resolution) { :half_hour }
-
-      its(:length) { should == 8 }
-
-      context "first result" do
-        subject { results.first.to_ostruct }
-
-        its(:timestamp) { should == "2010-12-31 22:00".to_time }
-        its(:value)     { should == 225.5 }
-      end
-
-      context "last result" do
-        subject { results.last.to_ostruct }
-
-        its(:timestamp) { should == "2011-01-01 01:30".to_time }
-        its(:value)     { should == 15.5 }
-      end
-    end
-
-    context "by quarter-hour" do
-      let(:resolution) { :quarter_hour }
-
-      its(:length) { should == 16 }
-
-      context "first result" do
-        subject { results.first.to_ostruct }
-
-        its(:timestamp) { should == "2010-12-31 22:00".to_time }
-        its(:value)     { should == 233 }
-      end
-
-      context "last result" do
-        subject { results.last.to_ostruct }
-
-        its(:timestamp) { should == "2011-01-01 01:45".to_time }
-        its(:value)     { should == 8 }
-      end
-    end
-
-    context "by sixth-hour" do
-      let(:resolution) { :sixth_hour }
-
-      its(:length) { should == 24 }
-
-      context "first result" do
-        subject { results.first.to_ostruct }
-
-        its(:timestamp) { should == "2010-12-31 22:00".to_time }
-        its(:value)     { should == 235.5 }
-      end
-
-      context "last result" do
-        subject { results.last.to_ostruct }
-
-        its(:timestamp) { should == "2011-01-01 01:50".to_time }
-        its(:value)     { should == 5.5 }
-      end
-    end
-
-    context "by twelfth-hour" do
-      let(:resolution) { :twelfth_hour }
-
-      its(:length) { should == 48 }
-
-      context "first result" do
-        subject { results.first.to_ostruct }
-
-        its(:timestamp) { should == "2010-12-31 22:00".to_time }
-        its(:value)     { should == 238 }
-      end
-
-      context "last result" do
-        subject { results.last.to_ostruct }
-
-        its(:timestamp) { should == "2011-01-01 01:55".to_time }
-        its(:value)     { should == 3 }
+        its(:count)     { should == 18300 }
+        its(:sum_lorem) { should == 1830 }
+        its(:avg_lorem) { should == 61 }
+        its(:min_lorem) { should == 3 }
+        its(:max_lorem) { should == 240 }
       end
     end
 
@@ -240,14 +189,22 @@ describe Metric do
         subject { results.first.to_ostruct }
 
         its(:timestamp) { should == "2010-12-31 22:00".to_time }
-        its(:value)     { should == 240 }
+        its(:count)     { should == 2400 }
+        its(:sum_lorem) { should == 240 }
+        its(:avg_lorem) { should == 480 }
+        its(:min_lorem) { should == 720 }
+        its(:max_lorem) { should == 960 }
       end
 
       context "last result" do
         subject { results.last.to_ostruct }
 
         its(:timestamp) { should == "2011-01-01 01:59".to_time }
-        its(:value)     { should == 1 }
+        its(:count)     { should == 10 }
+        its(:sum_lorem) { should == 1 }
+        its(:avg_lorem) { should == 2 }
+        its(:min_lorem) { should == 3 }
+        its(:max_lorem) { should == 4 }
       end
     end
 
@@ -256,14 +213,6 @@ describe Metric do
 
       it "should raise an error" do
         expect { subject }.to raise_error("invalid resolution 'foo'")
-      end
-    end
-
-    context "with an invalid function" do
-      let(:function) { :foo }
-
-      it "should raise an error" do
-        expect { subject }.to raise_error("invalid function 'foo'")
       end
     end
   end
