@@ -1,9 +1,9 @@
-require File.expand_path('../boot', __FILE__)
+require File.expand_path("../boot", __FILE__)
 
-require 'action_controller/railtie'
-require 'action_mailer/railtie'
-require 'sequel-rails/railtie'
-require 'sprockets/railtie'
+require "action_controller/railtie"
+require "action_mailer/railtie"
+require "sequel-rails/railtie"
+require "sprockets/railtie"
 
 if defined?(Bundler)
   # If you precompile assets before deploying to production, use this line
@@ -46,6 +46,6 @@ module Cumulus
     config.assets.enabled = true
 
     # Version of your assets, change this if you want to expire all your assets
-    config.assets.version = '1.0'
+    config.assets.version = "1.0"
   end
 end
