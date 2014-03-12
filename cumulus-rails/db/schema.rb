@@ -1,28 +1,28 @@
 Sequel.migration do
-  up do
-    create_table(:accounts, :ignore_index_errors=>true) do
+  change do
+    create_table(:accounts) do
       primary_key :id
-      String :name, :text=>true, :null=>false
-      String :api_key, :text=>true, :null=>false
-      DateTime :created_at, :null=>false
-      DateTime :updated_at, :null=>false
+      column :name, "text", :null=>false
+      column :api_key, "text", :null=>false
+      column :created_at, "timestamp without time zone", :null=>false
+      column :updated_at, "timestamp without time zone", :null=>false
       
       index [:api_key]
       index [:api_key], :name=>:accounts_api_key_key, :unique=>true
       index [:name], :name=>:accounts_name_key, :unique=>true
     end
     
-    create_table(:dimension_dates, :ignore_index_errors=>true) do
-      Date :date, :null=>false
-      Integer :year, :null=>false
-      Integer :quarter, :null=>false
-      Integer :month, :null=>false
-      Integer :week, :null=>false
-      Integer :day, :null=>false
-      Date :nearest_year, :null=>false
-      Date :nearest_quarter, :null=>false
-      Date :nearest_month, :null=>false
-      Date :nearest_week, :null=>false
+    create_table(:dimension_dates) do
+      column :date, "date", :null=>false
+      column :year, "integer", :null=>false
+      column :quarter, "integer", :null=>false
+      column :month, "integer", :null=>false
+      column :week, "integer", :null=>false
+      column :day, "integer", :null=>false
+      column :nearest_year, "date", :null=>false
+      column :nearest_quarter, "date", :null=>false
+      column :nearest_month, "date", :null=>false
+      column :nearest_week, "date", :null=>false
       
       primary_key [:date]
       
@@ -37,21 +37,21 @@ Sequel.migration do
       index [:year]
     end
     
-    create_table(:dimension_times, :ignore_index_errors=>true) do
-      String :time, :null=>false
-      Integer :hour, :null=>false
-      Integer :half_hour, :null=>false
-      Integer :quarter_hour, :null=>false
-      Integer :sixth_hour, :null=>false
-      Integer :twelfth_hour, :null=>false
-      Integer :minute, :null=>false
-      Integer :second, :null=>false
-      String :nearest_hour, :null=>false
-      String :nearest_half_hour, :null=>false
-      String :nearest_quarter_hour, :null=>false
-      String :nearest_sixth_hour, :null=>false
-      String :nearest_twelfth_hour, :null=>false
-      String :nearest_minute, :null=>false
+    create_table(:dimension_times) do
+      column :time, "time(0) without time zone", :null=>false
+      column :hour, "integer", :null=>false
+      column :half_hour, "integer", :null=>false
+      column :quarter_hour, "integer", :null=>false
+      column :sixth_hour, "integer", :null=>false
+      column :twelfth_hour, "integer", :null=>false
+      column :minute, "integer", :null=>false
+      column :second, "integer", :null=>false
+      column :nearest_hour, "time(0) without time zone", :null=>false
+      column :nearest_half_hour, "time(0) without time zone", :null=>false
+      column :nearest_quarter_hour, "time(0) without time zone", :null=>false
+      column :nearest_sixth_hour, "time(0) without time zone", :null=>false
+      column :nearest_twelfth_hour, "time(0) without time zone", :null=>false
+      column :nearest_minute, "time(0) without time zone", :null=>false
       
       primary_key [:time]
       
@@ -70,26 +70,32 @@ Sequel.migration do
       index [:twelfth_hour]
     end
     
-    create_table(:metrics, :ignore_index_errors=>true) do
-      primary_key :id
-      Integer :account_id, :null=>false
-      String :type, :text=>true, :null=>false
-      String :grains, :null=>false
-      String :properties, :null=>false
-      DateTime :created_at, :null=>false
-      DateTime :updated_at, :null=>false
-      
-      index [:type]
-    end
-    
     create_table(:schema_migrations) do
-      String :filename, :text=>true, :null=>false
+      column :filename, "text", :null=>false
       
       primary_key [:filename]
     end
+    
+    create_table(:metrics) do
+      primary_key :id
+      foreign_key :account_id, :accounts, :null=>false, :key=>[:id], :on_delete=>:cascade, :on_update=>:cascade
+      column :type, "text", :null=>false
+      column :grains, "text[]", :null=>false
+      column :properties, "text[]", :null=>false
+      column :created_at, "timestamp without time zone", :null=>false
+      column :updated_at, "timestamp without time zone", :null=>false
+      
+      index [:type]
+    end
   end
-  
-  down do
-    drop_table(:accounts, :dimension_dates, :dimension_times, :metrics, :schema_migrations)
+end
+Sequel.migration do
+  change do
+    self << "INSERT INTO \"schema_migrations\" (\"filename\") VALUES ('20110130050000_make_date_function.rb')"
+    self << "INSERT INTO \"schema_migrations\" (\"filename\") VALUES ('20110130050100_make_time_function.rb')"
+    self << "INSERT INTO \"schema_migrations\" (\"filename\") VALUES ('20110130050200_dimension_dates.rb')"
+    self << "INSERT INTO \"schema_migrations\" (\"filename\") VALUES ('20110130050300_dimension_times.rb')"
+    self << "INSERT INTO \"schema_migrations\" (\"filename\") VALUES ('20110815075519_create_accounts.rb')"
+    self << "INSERT INTO \"schema_migrations\" (\"filename\") VALUES ('20110815204404_create_metrics.rb')"
   end
 end
