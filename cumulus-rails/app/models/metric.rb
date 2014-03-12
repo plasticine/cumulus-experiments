@@ -34,8 +34,8 @@ class Metric < Sequel::Model
     count_window_function = Sequel::SQL::WindowFunction.new(function, window).as(:count)
 
     facts_dataset
-      .join(:dimension_dates, date: :timestamp.cast(:date))
-      .join(:dimension_times, time: :timestamp.cast(:time))
+      .join(:dimension_dates, date: Sequel.cast(:timestamp, :date))
+      .join(:dimension_times, time: Sequel.cast(:timestamp, :time))
       .distinct(*partition)
       .select(timestamp, count_window_function, *functions)
   end
