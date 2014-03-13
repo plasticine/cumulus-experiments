@@ -1,11 +1,16 @@
-# A metric represents a measurement at a paticular time.
+# A metric represents a measurement of many facts over time.
 class Metric < Sequel::Model
   FACT_COLUMNS = [:timestamp, :count].freeze
   AGGREGATIONS = [:sum, :avg, :min, :max].freeze
 
+  # A metric belongs to an account.
   many_to_one :account
+
+  # A metric has many facts.
   one_to_many :facts, read_only: true, reciprocal: nil, dataset: proc { db[fact_table_name] }
 
+  # Returns the fact table name (qualified by the schema). For example,
+  # "account_123__metric_234".
   def fact_table_name
     :"account_#{account_id}__metric_#{id}"
   end
@@ -18,26 +23,31 @@ class Metric < Sequel::Model
     (values[:properties] || []).map(&:to_sym)
   end
 
+  # Returns a dataset for the metric which represents an aggregation of facts
+  # for a given time resolution.
   def aggregate(resolution)
-    partition = calculate_partition(resolution)
-    window    = Sequel::SQL::Window.new(partition: partition)
-    timestamp = Sequel::SQL::NumericExpression.new(:+, *partition).cast(:timestamp).as(:timestamp)
+    # Look up the date/time dimensions for the resolution.
+    date_time_dimensions = date_time_dimensions_for_resolution(resolution)
 
-    functions = properties.map do |property|
+    # Build the timestamp from the date/time dimensions.
+    timestamp = Sequel::SQL::NumericExpression.new(:+, *date_time_dimensions).cast(:timestamp).as(:timestamp)
+
+    # Build a window function to sum the counts.
+    count_window_function = Sequel::SQL::Function.new(:sum, :count).over(partition: date_time_dimensions).as(:count)
+
+    # Build the aggregation window functions.
+    aggregation_window_functions = properties.map do |property|
       AGGREGATIONS.map do |aggregation|
-        function = Sequel::SQL::Function.new(aggregation, :"#{aggregation}_#{property}")
-        Sequel::SQL::WindowFunction.new(function, window).as(:"#{aggregation}_#{property}")
+        column = :"#{aggregation}_#{property}"
+        Sequel::SQL::Function.new(aggregation, column).over(partition: date_time_dimensions).as(column)
       end
     end.flatten
-
-    function = Sequel::SQL::Function.new(:sum, :count)
-    count_window_function = Sequel::SQL::WindowFunction.new(function, window).as(:count)
 
     facts_dataset
       .join(:dimension_dates, date: Sequel.cast(:timestamp, :date))
       .join(:dimension_times, time: Sequel.cast(:timestamp, :time))
-      .distinct(*partition)
-      .select(timestamp, count_window_function, *functions)
+      .distinct(*date_time_dimensions)
+      .select(timestamp, count_window_function, *aggregation_window_functions)
   end
 
   def property_columns
@@ -82,7 +92,9 @@ protected
     super
   end
 
-  def calculate_partition(resolution)
+  # Returns the date/time dimension column(s) with which to group the facts for
+  # a given time resolution.
+  def date_time_dimensions_for_resolution(resolution)
     case resolution.to_sym
     when :year         then :nearest_year
     when :month        then :nearest_month
@@ -99,6 +111,7 @@ protected
     end
   end
 
+  # Returns a SQL function applied to the value column for a given function name.
   def calculate_function(function)
     raise "invalid function '#{function}'" unless [:sum, :avg, :min, :max, :count].include?(function.to_sym)
     Sequel::SQL::Function.new(function.to_sym, :value)
@@ -119,7 +132,7 @@ protected
   end
 
   def add_grain_columns
-    add_grain_columns  = grain_columns - (grain_columns & facts_dataset.columns) - FACT_COLUMNS
+    add_grain_columns = grain_columns - (grain_columns & facts_dataset.columns) - FACT_COLUMNS
 
     db.alter_table fact_table_name do
       add_grain_columns.each do |column|
@@ -130,7 +143,7 @@ protected
   end
 
   def add_property_columns
-    add_property_columns  = property_columns - (property_columns & facts_dataset.columns) - FACT_COLUMNS
+    add_property_columns = property_columns - (property_columns & facts_dataset.columns) - FACT_COLUMNS
 
     db.alter_table fact_table_name do
       add_property_columns.each do |column|
