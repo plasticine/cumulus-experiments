@@ -7,12 +7,12 @@ Sequel::Model.plugin :validation_helpers
 module Sequel
   class Model
     def save!
-      save raise_on_save_failure: true
+      save(raise_on_save_failure: true)
     end
 
     def update!(hash)
-      set hash
-      save raise_on_save_failure: true
+      set(hash)
+      save(raise_on_save_failure: true)
     end
   end
 end
