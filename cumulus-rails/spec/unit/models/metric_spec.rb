@@ -18,16 +18,16 @@ describe Metric do
         expect { metric.save }.to change { table_exists?(metric.fact_table_name) }.from(false).to(true)
       end
 
-      it "should synchronize the grain columns" do
+      it "should synchronize the property columns" do
         metric.save
         metric.facts_dataset.columns.should =~ Metric::FACT_COLUMNS + metric.grain_columns + metric.property_columns
       end
     end
 
     context "when updated" do
-      before { metric.grains = [:foo, :baz] }
+      before { metric.properties = [:lorem, :dolor] }
 
-      it "should synchronize the grain columns" do
+      it "should synchronize the property columns" do
         metric.save
         metric.facts_dataset.columns.should =~ Metric::FACT_COLUMNS + metric.grain_columns + metric.property_columns
       end
