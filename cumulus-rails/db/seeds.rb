@@ -4,6 +4,8 @@ account = Account.create(name: "Acme")
 metric = Metric.create(account: account, type: "page_view", grains: [:resource], properties: [:response_time])
 
 Sequel::Model.db.execute <<-SQL
+  SET TIME ZONE 'UTC';
+
   INSERT INTO account_#{account.id}.metric_#{metric.id} (timestamp, count, resource, sum_response_time, avg_response_time, min_response_time, max_response_time)
 
   SELECT
