@@ -10,6 +10,9 @@ Bundler.require(:default, Rails.env)
 
 module Cumulus
   class Application < Rails::Application
+    # Ensure locale is available.
+    config.i18n.enforce_available_locales = true
+
     # Include the 'lib' dir in the autoload path.
     config.autoload_paths += %W(#{config.root}/lib)
   end
