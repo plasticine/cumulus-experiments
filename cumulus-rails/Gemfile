@@ -40,6 +40,7 @@ end
 gem 'pg'
 gem 'sequel-rails'
 gem 'rest-client', require: false
+gem 'react-rails'
 
 # For debugging.
 gem 'pry', group: [:development, :test]
