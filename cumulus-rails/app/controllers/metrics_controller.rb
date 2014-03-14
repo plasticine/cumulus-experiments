@@ -7,12 +7,13 @@ class MetricsController < ApplicationController
   end
 
   def aggregate
+    property   = params[:property]
     resolution = params[:resolution]
 
     from = Time.at(params[:from].to_i)
     to   = Time.at(params[:to  ].to_i)
 
-    dataset = @metric.aggregate(resolution).where(timestamp: from..to)
+    dataset = @metric.aggregate(property, resolution).where(timestamp: from..to)
 
     respond_with dataset
   end

@@ -24,8 +24,8 @@ class Metric < Sequel::Model
   end
 
   # Returns a dataset for the metric which represents an aggregation of facts
-  # for a given time resolution.
-  def aggregate(resolution)
+  # for a given property and time resolution.
+  def aggregate(property, resolution)
     # Look up the date/time dimensions for the resolution.
     date_time_dimensions = date_time_dimensions_for_resolution(resolution)
 
@@ -36,12 +36,9 @@ class Metric < Sequel::Model
     count_window_function = Sequel::SQL::Function.new(:sum, :count).over(partition: date_time_dimensions).as(:count)
 
     # Build the aggregation window functions.
-    aggregation_window_functions = properties.map do |property|
-      AGGREGATIONS.map do |aggregation|
-        column = :"#{aggregation}_#{property}"
-        Sequel::SQL::Function.new(aggregation, column).over(partition: date_time_dimensions).as(column)
-      end
-    end.flatten
+    aggregation_window_functions = AGGREGATIONS.map do |aggregation|
+      Sequel::SQL::Function.new(aggregation, :"#{property}").over(partition: date_time_dimensions).as(:"#{aggregation}_#{property}")
+    end
 
     facts_dataset
       .join(:dimension_dates, date: Sequel.cast(:timestamp, :date))
@@ -51,11 +48,7 @@ class Metric < Sequel::Model
   end
 
   def property_columns
-    properties.map do |property|
-      AGGREGATIONS.map do |aggregation|
-        :"#{aggregation}_#{property}"
-      end
-    end.flatten
+    properties
   end
 
   def grain_columns
